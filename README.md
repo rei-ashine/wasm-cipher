@@ -12,7 +12,7 @@ This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Count
 ## Diagram
 
 ```mermaid
-flowchart TD
+flowchart LR
     %% Styling definitions
     classDef input fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,color:#000
     classDef process fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000
@@ -44,7 +44,19 @@ flowchart TD
         Concat --> B64{Base64 Encode}:::process
         B64 --> Out([Encrypted String]):::output
     end
-    
+```
+
+<br/>
+
+```mermaid
+flowchart LR
+    %% Styling definitions
+    classDef input fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,color:#000
+    classDef process fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000
+    classDef crypto fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#000
+    classDef output fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#000
+    classDef data fill:#F5F5F5,stroke:#616161,stroke-width:1px,color:#000
+
     subgraph Dec [🔓 Decryption Flow]
         direction LR
         In([Encrypted String]):::input
