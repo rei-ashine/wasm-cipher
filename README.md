@@ -1,8 +1,13 @@
-# [WASM-Cipher](https://Rei-Ashine.github.io/wasm-cipher/www/dist/)
+# [WASM-Cipher](https://rei-ashine.github.io/wasm-cipher/)
 
-DATE: Jan. 20th, 2023
+DATE: 2026-07-07
 
 ![EncryptionTool](./PNG/EncryptionTool.png)
+
+## Security Update
+This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Counter Mode) authenticated encryption algorithm for enhanced security.
+- Data integrity checks are now performed automatically upon decryption, preventing tampering.
+- Employs modern WebAssembly (`wasm-pack`) + Rust cryptographic libraries (`aes-gcm`, `pbkdf2`).
 
 ## Diagram
 
@@ -11,38 +16,49 @@ DATE: Jan. 20th, 2023
 ## Directory Structure
 ```
 .
-├── README.md
+├── .github
+│   ├── dependabot.yml
+│   └── workflows
+│       └── static.yml
+├── .gitignore
+├── Cargo.lock
 ├── Cargo.toml
 ├── PNG
+│   ├── Diagram_EncryptionTool.png
+│   └── EncryptionTool.png
+├── README.md
 ├── src
-│   ├── lib.rs
-│   └── cipher.rs
+│   ├── cipher.rs
+│   └── lib.rs
 └── www
+    ├── .gitignore
     ├── bootstrap.js
-    ├── index.js
     ├── index.html
-    ├── dist
-    ├── public
+    ├── index.js
+    ├── package-lock.json
     ├── package.json
+    ├── public
+    │   ├── assets
+    │   ├── css
+    │   └── html
+    ├── README.md
     └── webpack.config.js
 ```
 ---
 ```
 ===============================================================================
- Language            Files        Lines         Code     Comments       Blanks
+ Language                     files          blank        comment           code
 ===============================================================================
- CSS                     1          156          114           17           25
- JavaScript              5          431          327           77           27
- JSON                    2         6547         6547            0            0
- Markdown                2           74            0           53           21
- Rust                    2           74           58            0           16
- TOML                    1           17           13            1            3
--------------------------------------------------------------------------------
- HTML                    2          144          116           10           18
- |- JavaScript           2           20           20            0            0
- (Total)                            164          136           10           18
+ JSON                             2              0              0           3727
+ HTML                             3             37             23            257
+ JavaScript                       4             34              7            196
+ CSS                              1             25             17            114
+ Rust                             2             28              0             97
+ Markdown                         2             25              0             94
+ YAML                             3              8             10             61
+ TOML                             1              2              0             14
 ===============================================================================
- Total                  15         7443         7175          158          110
+ SUM:                            18            159             57           4560
 ===============================================================================
 ```
 
