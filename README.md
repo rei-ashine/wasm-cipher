@@ -1,6 +1,6 @@
 # [WASM-Cipher](https://rei-ashine.github.io/wasm-cipher/)
 
-DATE: 2026-07-07
+DATE: Jul. 8th, 2026
 
 ![EncryptionTool](./PNG/EncryptionTool.png)
 
@@ -10,6 +10,12 @@ This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Count
 
 - Data integrity checks are now performed automatically upon decryption, preventing tampering.
 - Employs modern WebAssembly (`wasm-pack`) + Rust cryptographic libraries (`aes-gcm`, `pbkdf2`).
+
+## UI & UX Enhancements
+
+- **Smart Copy**: Output area features a modern, responsive clipboard SVG icon. Clicking anywhere on the output area copies the text to the clipboard and provides a visual checkmark confirmation.
+- **Safer Swap**: The Swap button securely transfers output to the input field and clears the output area, making iterative operations seamless.
+- **Resilient Error Handling**: Transient error messages disappear automatically, and previous valid output states are restored without data loss.
 
 ## Diagram
 
@@ -116,20 +122,20 @@ flowchart LR
 ---
 
 ```text
-===============================================================================
- Language                     files          blank        comment           code
-===============================================================================
- JSON                             2              0              0           3727
- HTML                             3             37             23            257
- JavaScript                       4             34              7            196
- CSS                              1             25             17            114
- Rust                             2             28              0             97
- Markdown                         2             25              0             94
- YAML                             3              8             10             61
- TOML                             1              2              0             14
-===============================================================================
- SUM:                            18            159             57           4560
-===============================================================================
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+JSON                             2              0              0           3727
+HTML                             3             37             23            263
+JavaScript                       4             44              6            225
+Markdown                         2             44              0            162
+CSS                              1             28             17            137
+Rust                             2             28              0             97
+YAML                             3              8             10             61
+TOML                             1              2              0             14
+-------------------------------------------------------------------------------
+SUM:                            18            191             56           4686
+-------------------------------------------------------------------------------
 ```
 
 ## Reference
