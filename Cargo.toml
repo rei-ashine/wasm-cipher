@@ -7,11 +7,10 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aes = "0.8.4"
-sha2 = "0.10.9"
+sha2 = "0.11"
 base64 = "0.22.1"
 wasm-bindgen = "0.2.100"
-cbc = "0.1"
-pbkdf2 = "0.12"
-getrandom = { version = "0.2", features = ["js"]}
+pbkdf2 = "0.13"
+getrandom = { version = "0.4", features = ["wasm_js"]}
 web-sys = { version = "0.3", features = ["console"] }
+aes-gcm = "0.11"

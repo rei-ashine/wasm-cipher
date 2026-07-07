@@ -1,53 +1,45 @@
-use aes::Aes256;
-use cbc::{Encryptor, Decryptor};
-use cbc::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce // 12-bytes nonce
+};
 use pbkdf2::pbkdf2_hmac;
 use sha2::Sha256;
 use base64::{Engine as _, engine::general_purpose};
 
-type Aes256CbcEnc = Encryptor<Aes256>;
-type Aes256CbcDec = Decryptor<Aes256>;
-
 const PBKDF2_ITERATIONS: u32 = 100_000;
 const SALT_SIZE: usize = 16;
-const IV_SIZE: usize = 16;
+const NONCE_SIZE: usize = 12;
 const KEY_SIZE: usize = 32;
 
 pub fn encrypt(password: &str, data: &str) -> Result<String, String> {
     let salt = gen_salt()?;
-    let key = derive_key(password, &salt)?;
-    let iv = gen_iv()?;
+    let key_bytes = derive_key(password, &salt)?;
+    let nonce_bytes = gen_nonce()?;
 
-    let cipher = Aes256CbcEnc::new(key.as_slice().try_into().map_err(|_| "Invalid key size")?, 
-                                   iv.as_slice().try_into().map_err(|_| "Invalid IV size")?);
-    
-    // Create buffer with enough space for data + padding (up to one extra block)
-    let data_bytes = data.as_bytes();
-    let block_size = 16;
-    let mut buffer = vec![0u8; data_bytes.len() + block_size];
-    buffer[..data_bytes.len()].copy_from_slice(data_bytes);
-    
-    let ciphertext = cipher.encrypt_padded_mut::<Pkcs7>(&mut buffer, data_bytes.len())
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|_| "Invalid key length")?;
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).map_err(|_| "Invalid nonce length")?;
+
+    let ciphertext = cipher.encrypt(&nonce, data.as_bytes())
         .map_err(|_| "Encryption failed")?;
 
     let mut result = Vec::new();
     result.extend_from_slice(&salt);
-    result.extend_from_slice(&iv);
-    result.extend_from_slice(ciphertext);
+    result.extend_from_slice(&nonce_bytes);
+    result.extend_from_slice(&ciphertext);
 
     Ok(general_purpose::STANDARD.encode(result))
 }
 
 fn gen_salt() -> Result<Vec<u8>, String> {
     let mut salt = vec![0u8; SALT_SIZE];
-    getrandom::getrandom(&mut salt).map_err(|_| "Failed to generate salt")?;
+    getrandom::fill(&mut salt).map_err(|_| "Failed to generate salt")?;
     Ok(salt)
 }
 
-fn gen_iv() -> Result<Vec<u8>, String> {
-    let mut iv = vec![0u8; IV_SIZE];
-    getrandom::getrandom(&mut iv).map_err(|_| "Failed to generate IV")?;
-    Ok(iv)
+fn gen_nonce() -> Result<Vec<u8>, String> {
+    let mut nonce = vec![0u8; NONCE_SIZE];
+    getrandom::fill(&mut nonce).map_err(|_| "Failed to generate nonce")?;
+    Ok(nonce)
 }
 
 fn derive_key(password: &str, salt: &[u8]) -> Result<Vec<u8>, String> {
@@ -60,27 +52,25 @@ pub fn decrypt(password: &str, data: &str) -> Result<String, String> {
     let bytes = general_purpose::STANDARD.decode(data)
         .map_err(|_| "Invalid base64 encoding")?;
 
-    if bytes.len() < SALT_SIZE + IV_SIZE {
+    if bytes.len() < SALT_SIZE + NONCE_SIZE {
         return Err("Invalid ciphertext: too short".to_string());
     }
 
     let salt = &bytes[..SALT_SIZE];
-    let iv = &bytes[SALT_SIZE..SALT_SIZE + IV_SIZE];
-    let ciphertext = &bytes[SALT_SIZE + IV_SIZE..];
+    let nonce_bytes = &bytes[SALT_SIZE..SALT_SIZE + NONCE_SIZE];
+    let ciphertext = &bytes[SALT_SIZE + NONCE_SIZE..];
 
-    let key = derive_key(password, salt)?;
+    let key_bytes = derive_key(password, salt)?;
 
-    let cipher = Aes256CbcDec::new(key.as_slice().try_into().map_err(|_| "Invalid key size")?, 
-                                   iv.try_into().map_err(|_| "Invalid IV size")?);
-    let mut buffer = ciphertext.to_vec();
-    
-    let plaintext = cipher.decrypt_padded_mut::<Pkcs7>(&mut buffer)
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|_| "Invalid key length")?;
+    let nonce = Nonce::try_from(nonce_bytes).map_err(|_| "Invalid nonce length")?;
+
+    let plaintext = cipher.decrypt(&nonce, ciphertext)
         .map_err(|_| "Decryption failed - wrong password or corrupted data")?;
 
-    String::from_utf8(plaintext.to_vec())
+    String::from_utf8(plaintext)
         .map_err(|_| "Invalid UTF-8 in decrypted data".to_string())
 }
-
 
 #[cfg(test)]
 mod test_cipher {
