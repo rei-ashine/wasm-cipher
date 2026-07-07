@@ -5,7 +5,9 @@ DATE: 2026-07-07
 ![EncryptionTool](./PNG/EncryptionTool.png)
 
 ## Security Update
+
 This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Counter Mode) authenticated encryption algorithm for enhanced security.
+
 - Data integrity checks are now performed automatically upon decryption, preventing tampering.
 - Employs modern WebAssembly (`wasm-pack`) + Rust cryptographic libraries (`aes-gcm`, `pbkdf2`).
 
@@ -46,7 +48,7 @@ flowchart LR
     end
 ```
 
-<br/>
+
 
 ```mermaid
 flowchart LR
@@ -81,7 +83,8 @@ flowchart LR
 ```
 
 ## Directory Structure
-```
+
+```text
 .
 ├── .github
 │   ├── dependabot.yml
@@ -111,8 +114,10 @@ flowchart LR
     ├── README.md
     └── webpack.config.js
 ```
+
 ---
-```
+
+```text
 ===============================================================================
  Language                     files          blank        comment           code
 ===============================================================================
@@ -130,6 +135,7 @@ flowchart LR
 ```
 
 ## Reference
+
 - [『高効率言語 Rust 書きかた・作りかた』](https://www.socym.co.jp/book/1351)
 
 ![ref1](https://www.socym.co.jp/wp-content/uploads/2022/120Px_syoei-1.jpg)
