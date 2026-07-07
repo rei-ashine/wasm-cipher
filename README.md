@@ -11,7 +11,58 @@ This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Count
 
 ## Diagram
 
-![Diagram](./PNG/Diagram_EncryptionTool.png)
+```mermaid
+flowchart TD
+    subgraph Encryption
+        P1[Password]
+        D1[Plaintext Data]
+        
+        S1[Salt <br/>16 bytes]
+        N1[Nonce <br/>12 bytes]
+        
+        RNG1(getrandom) --> S1
+        RNG1 --> N1
+        
+        P1 --> KDF1{PBKDF2-HMAC-SHA256 <br/> 100,000 iterations}
+        S1 --> KDF1
+        KDF1 --> Key1[Key <br/>32 bytes]
+        
+        Key1 --> AES1{AES-256-GCM}
+        N1 --> AES1
+        D1 --> AES1
+        
+        AES1 --> C1[Ciphertext <br/> + Auth Tag]
+        
+        S1 --> Concat1[Concatenate: <br/> Salt + Nonce + Ciphertext]
+        N1 --> Concat1
+        C1 --> Concat1
+        
+        Concat1 --> B64_1(Base64 Encode)
+        B64_1 --> Out1([Encrypted String])
+    end
+    
+    subgraph Decryption
+        In2([Encrypted String])
+        P2[Password]
+        
+        In2 --> B64_2(Base64 Decode)
+        B64_2 --> Split2[Split into: <br/> Salt, Nonce, Ciphertext]
+        
+        Split2 --> S2[Salt <br/>16 bytes]
+        Split2 --> N2[Nonce <br/>12 bytes]
+        Split2 --> C2[Ciphertext]
+        
+        P2 --> KDF2{PBKDF2-HMAC-SHA256 <br/> 100,000 iterations}
+        S2 --> KDF2
+        KDF2 --> Key2[Key <br/>32 bytes]
+        
+        Key2 --> AES2{AES-256-GCM}
+        N2 --> AES2
+        C2 --> AES2
+        
+        AES2 --> D2[Plaintext Data]
+    end
+```
 
 ## Directory Structure
 ```
