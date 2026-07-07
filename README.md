@@ -48,8 +48,6 @@ flowchart LR
     end
 ```
 
-
-
 ```mermaid
 flowchart LR
     %% Styling definitions
