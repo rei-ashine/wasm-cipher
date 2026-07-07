@@ -10,12 +10,25 @@ const q = (query) => {
     return document.querySelector(query);
 }
 
+let errorTimeout = null;
+let previousOutput = "";
+
 function showError(message) {
     const outputBox = q("#outbox");
+    
+    if (errorTimeout) {
+        clearTimeout(errorTimeout);
+    } else {
+        previousOutput = outputBox.value;
+    }
+    
     outputBox.value = `Error: ${message}`;
     outputBox.style.color = "#dc3545";
-    setTimeout(() => {
+    
+    errorTimeout = setTimeout(() => {
+        outputBox.value = previousOutput;
         outputBox.style.color = "";
+        errorTimeout = null;
     }, 3000);
 }
 
@@ -40,6 +53,11 @@ function enc_on() {
     
     try {
         const result = wasmEncrypt(password, input);
+        if (errorTimeout) {
+            clearTimeout(errorTimeout);
+            errorTimeout = null;
+        }
+        previousOutput = result;
         q("#outbox").value = result;
         q("#outbox").style.color = "";
     } catch (err) {
@@ -51,8 +69,17 @@ function enc_on() {
 function swap_on() {
     const inbox = q("#inbox");
     const outbox = q("#outbox");
+    
+    if (errorTimeout) {
+        clearTimeout(errorTimeout);
+        errorTimeout = null;
+        outbox.value = previousOutput;
+        outbox.style.color = "";
+    }
+    
     inbox.value = outbox.value;
     outbox.value = "";
+    previousOutput = "";
     resizeTextarea(inbox);
     resizeTextarea(outbox);
 }
@@ -78,6 +105,11 @@ function dec_on() {
     
     try {
         const result = wasmDecrypt(password, input);
+        if (errorTimeout) {
+            clearTimeout(errorTimeout);
+            errorTimeout = null;
+        }
+        previousOutput = result;
         q("#outbox").value = result;
         q("#outbox").style.color = "";
     } catch (err) {
