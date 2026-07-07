@@ -11,7 +11,7 @@ aes = "0.8.4"
 sha2 = "0.10.9"
 base64 = "0.22.1"
 wasm-bindgen = "0.2.100"
-cbc = "0.1"
+cbc = "0.2"
 pbkdf2 = "0.12"
 getrandom = { version = "0.2", features = ["js"]}
 web-sys = { version = "0.3", features = ["console"] }
