@@ -51,9 +51,8 @@ function enc_on() {
 function swap_on() {
     const inbox = q("#inbox");
     const outbox = q("#outbox");
-    const temp = inbox.value;
     inbox.value = outbox.value;
-    outbox.value = temp;
+    outbox.value = "";
     resizeTextarea(inbox);
     resizeTextarea(outbox);
 }
@@ -117,16 +116,18 @@ async function copyToClipboard() {
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(output);
-            // Show temporary success message
-            const copyBtn = q("#copy-btn");
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = "Copied!";
-            copyBtn.classList.replace("btn-outline-light", "btn-success");
             
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-                copyBtn.classList.replace("btn-success", "btn-outline-light");
-            }, 2000);
+            const copyIcon = q("#copy-icon");
+            if (copyIcon) {
+                const originalHTML = copyIcon.innerHTML;
+                copyIcon.innerHTML = `<path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>`;
+                copyIcon.style.color = "#198754";
+                
+                setTimeout(() => {
+                    copyIcon.innerHTML = originalHTML;
+                    copyIcon.style.color = "#8c8c8c";
+                }, 2000);
+            }
         } else {
             // Fallback for older browsers
             q("#outbox").select();
@@ -160,7 +161,7 @@ const main = () => {
             case "swap":
                 swap_on();
                 break;
-            case "copy-btn":
+            case "outbox":
                 copyToClipboard();
                 break;
         }
