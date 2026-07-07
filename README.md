@@ -13,54 +13,58 @@ This application has been migrated from AES-CBC to the **AES-GCM** (Galois/Count
 
 ```mermaid
 flowchart TD
-    subgraph Encryption
-        P1[Password]
-        D1[Plaintext Data]
+    %% Styling definitions
+    classDef input fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,color:#000
+    classDef process fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000
+    classDef crypto fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#000
+    classDef output fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#000
+    classDef data fill:#F5F5F5,stroke:#616161,stroke-width:1px,color:#000
+
+    subgraph Enc [🔒 Encryption Flow]
+        direction LR
+        P([Password]):::input
+        T([Plaintext]):::input
         
-        S1[Salt <br/>16 bytes]
-        N1[Nonce <br/>12 bytes]
+        R((getrandom)):::process --> S[Salt <br>16B]:::data
+        R --> N[Nonce <br>12B]:::data
         
-        RNG1(getrandom) --> S1
-        RNG1 --> N1
+        P --> KDF{PBKDF2 <br>HMAC-SHA256}:::crypto
+        S --> KDF
+        KDF --> K[Key <br>32B]:::data
         
-        P1 --> KDF1{PBKDF2-HMAC-SHA256 <br/> 100,000 iterations}
-        S1 --> KDF1
-        KDF1 --> Key1[Key <br/>32 bytes]
+        K --> AES{AES-256-GCM}:::crypto
+        N --> AES
+        T --> AES
+        AES --> C[Ciphertext <br>+ Auth Tag]:::data
         
-        Key1 --> AES1{AES-256-GCM}
-        N1 --> AES1
-        D1 --> AES1
+        S -.-> Concat((Concat)):::process
+        N -.-> Concat
+        C -.-> Concat
         
-        AES1 --> C1[Ciphertext <br/> + Auth Tag]
-        
-        S1 --> Concat1[Concatenate: <br/> Salt + Nonce + Ciphertext]
-        N1 --> Concat1
-        C1 --> Concat1
-        
-        Concat1 --> B64_1(Base64 Encode)
-        B64_1 --> Out1([Encrypted String])
+        Concat --> B64{Base64 Encode}:::process
+        B64 --> Out([Encrypted String]):::output
     end
     
-    subgraph Decryption
-        In2([Encrypted String])
-        P2[Password]
+    subgraph Dec [🔓 Decryption Flow]
+        direction LR
+        In([Encrypted String]):::input
+        P2([Password]):::input
         
-        In2 --> B64_2(Base64 Decode)
-        B64_2 --> Split2[Split into: <br/> Salt, Nonce, Ciphertext]
+        In --> B64D{Base64 Decode}:::process
+        B64D --> Split((Split)):::process
         
-        Split2 --> S2[Salt <br/>16 bytes]
-        Split2 --> N2[Nonce <br/>12 bytes]
-        Split2 --> C2[Ciphertext]
+        Split -.-> S2[Salt <br>16B]:::data
+        Split -.-> N2[Nonce <br>12B]:::data
+        Split -.-> C2[Ciphertext <br>+ Auth Tag]:::data
         
-        P2 --> KDF2{PBKDF2-HMAC-SHA256 <br/> 100,000 iterations}
+        P2 --> KDF2{PBKDF2 <br>HMAC-SHA256}:::crypto
         S2 --> KDF2
-        KDF2 --> Key2[Key <br/>32 bytes]
+        KDF2 --> K2[Key <br>32B]:::data
         
-        Key2 --> AES2{AES-256-GCM}
+        K2 --> AES2{AES-256-GCM}:::crypto
         N2 --> AES2
         C2 --> AES2
-        
-        AES2 --> D2[Plaintext Data]
+        AES2 --> Out2([Plaintext]):::output
     end
 ```
 
