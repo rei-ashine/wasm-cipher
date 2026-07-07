@@ -117,15 +117,16 @@ async function copyToClipboard() {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(output);
             
-            const copyIcon = q("#copy-icon");
-            if (copyIcon) {
-                const originalHTML = copyIcon.innerHTML;
-                copyIcon.innerHTML = `<path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>`;
-                copyIcon.style.color = "#198754";
+            const iconDefault = q("#icon-default");
+            const iconSuccess = q("#icon-success");
+            
+            if (iconDefault && iconSuccess) {
+                iconDefault.style.display = "none";
+                iconSuccess.style.display = "block";
                 
                 setTimeout(() => {
-                    copyIcon.innerHTML = originalHTML;
-                    copyIcon.style.color = "#8c8c8c";
+                    iconDefault.style.display = "block";
+                    iconSuccess.style.display = "none";
                 }, 2000);
             }
         } else {
@@ -150,7 +151,14 @@ const main = () => {
 
     // Event delegation for button clicks
     document.addEventListener("click", e => {
-        const id = e.target.getAttribute("id");
+        const target = e.target;
+        const id = target.getAttribute("id");
+        
+        if (target.closest(".copy-btn") || id === "outbox") {
+            copyToClipboard();
+            return;
+        }
+
         switch(id) {
             case "encrypt":
                 enc_on();
@@ -160,9 +168,6 @@ const main = () => {
                 break;
             case "swap":
                 swap_on();
-                break;
-            case "outbox":
-                copyToClipboard();
                 break;
         }
     });

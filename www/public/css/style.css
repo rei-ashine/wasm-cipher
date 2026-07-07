@@ -154,3 +154,29 @@ img.ribbon {
 .btn-pop:hover {
   box-shadow: 20px 20px 60px #a4aab3, -20px -20px 60px #fff;
 }
+
+.copy-btn {
+  background: transparent;
+  border: none;
+  color: #8c8c8c;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
+.copy-btn:hover {
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.copy-btn:active {
+  transform: scale(0.92);
+}
