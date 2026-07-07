@@ -14,6 +14,9 @@ module.exports = {
         {
           from: "index.html",
         },
+        {
+          from: "public",
+        },
       ],
     }),
   ],
