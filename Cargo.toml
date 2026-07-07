@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 aes = "0.8.4"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 base64 = "0.22.1"
 wasm-bindgen = "0.2.100"
 cbc = "0.1"
