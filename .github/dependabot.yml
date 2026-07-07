@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # npm の依存パッケージ（フロントエンド用）
+  - package-ecosystem: "npm"
+    directory: "/www"
+    schedule:
+      interval: "weekly"
+
+  # Cargo の依存パッケージ（Rust用）
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # GitHub Actions のワークフロー
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
