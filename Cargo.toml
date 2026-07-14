@@ -1,6 +1,6 @@
 [package]
 name = "wasm-cipher"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2021"
 
 [lib]
@@ -14,3 +14,8 @@ pbkdf2 = "0.13"
 getrandom = { version = "0.4", features = ["wasm_js"]}
 web-sys = { version = "0.3", features = ["console"] }
 aes-gcm = "0.11"
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
