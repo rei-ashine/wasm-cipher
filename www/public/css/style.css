@@ -129,13 +129,13 @@ label {
   position: relative;
 }
 
-flicker {
+.flicker {
   padding-bottom: 0.5rem;
   color: #fff;
   text-decoration: none;
   transition: 0.5s;
 }
-flicker:hover {
+.flicker:hover {
   text-shadow: -4px -3px 0px #71EDE8, 4px 3px 0px #E94150;
 }
 
