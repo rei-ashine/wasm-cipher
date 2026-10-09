@@ -50,6 +50,11 @@ jobs:
         with:
           # Upload only the built frontend directory
           path: './www/dist'
+          # Unique per attempt so "Re-run failed jobs" does not leave two
+          # artifacts with the same name, which deploy-pages rejects
+          name: github-pages-${{ github.run_attempt }}
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
