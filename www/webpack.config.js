@@ -17,6 +17,14 @@ module.exports = {
         {
           from: "public",
         },
+        {
+          from: "node_modules/bootstrap/dist/css/bootstrap.min.css{,.map}",
+          to: "vendor/bootstrap/css/[name][ext]",
+        },
+        {
+          from: "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js{,.map}",
+          to: "vendor/bootstrap/js/[name][ext]",
+        },
       ],
     }),
   ],
