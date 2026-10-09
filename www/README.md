@@ -46,8 +46,8 @@ npm init wasm-app
   - pulls in devDependencies for using webpack:
       - [`webpack`](https://www.npmjs.com/package/webpack)
       - [`webpack-cli`](https://www.npmjs.com/package/webpack-cli)
-      - [`webpack-dev-server`](https://www.npmjs.com/package/webpack-dev-server)
-  - defines a `start` script to run `webpack-dev-server`
+  - defines a `start` script to run `serve.js`
+- `serve.js`: development server that rebuilds on change (webpack watch mode) and serves `dist/` at http://127.0.0.1:8080/ (set `PORT` to change it)
 - `webpack.config.js`: configuration file for bundling your js with webpack
 
 ## License
