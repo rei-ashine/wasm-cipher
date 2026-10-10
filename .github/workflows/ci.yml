@@ -17,14 +17,23 @@ concurrency:
 jobs:
   rust:
     runs-on: ubuntu-latest
+    env:
+      # Pinned so new clippy lints in a stable release cannot turn CI red
+      # without a code change. Bump by hand and fix any new warnings.
+      RUST_VERSION: "1.97.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install Rust components
-        run: rustup component add rustfmt clippy
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+          rustup default "$RUST_VERSION"
       - name: Check formatting
         run: cargo fmt --check
-      - name: Lint
+      - name: Lint (host)
         run: cargo clippy --all-targets -- -D warnings
+      # The deployed build targets wasm32, so check it compiles there too
+      - name: Lint (wasm32)
+        run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
       - name: Test
         run: cargo test
