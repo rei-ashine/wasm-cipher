@@ -1,10 +1,11 @@
 use aes_gcm::{
     aead::{Aead, KeyInit},
-    Aes256Gcm, Nonce // 12-bytes nonce
+    Aes256Gcm,
+    Nonce, // 12-bytes nonce
 };
+use base64::{engine::general_purpose, Engine as _};
 use pbkdf2::pbkdf2_hmac;
 use sha2::Sha256;
-use base64::{Engine as _, engine::general_purpose};
 
 const PBKDF2_ITERATIONS: u32 = 100_000;
 const SALT_SIZE: usize = 16;
@@ -19,7 +20,8 @@ pub fn encrypt(password: &str, data: &str) -> Result<String, String> {
     let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|_| "Invalid key length")?;
     let nonce = Nonce::try_from(nonce_bytes.as_slice()).map_err(|_| "Invalid nonce length")?;
 
-    let ciphertext = cipher.encrypt(&nonce, data.as_bytes())
+    let ciphertext = cipher
+        .encrypt(&nonce, data.as_bytes())
         .map_err(|_| "Encryption failed")?;
 
     let mut result = Vec::new();
@@ -49,7 +51,8 @@ fn derive_key(password: &str, salt: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 pub fn decrypt(password: &str, data: &str) -> Result<String, String> {
-    let bytes = general_purpose::STANDARD.decode(data)
+    let bytes = general_purpose::STANDARD
+        .decode(data)
         .map_err(|_| "Invalid base64 encoding")?;
 
     if bytes.len() < SALT_SIZE + NONCE_SIZE {
@@ -65,28 +68,28 @@ pub fn decrypt(password: &str, data: &str) -> Result<String, String> {
     let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|_| "Invalid key length")?;
     let nonce = Nonce::try_from(nonce_bytes).map_err(|_| "Invalid nonce length")?;
 
-    let plaintext = cipher.decrypt(&nonce, ciphertext)
+    let plaintext = cipher
+        .decrypt(&nonce, ciphertext)
         .map_err(|_| "Decryption failed - wrong password or corrupted data")?;
 
-    String::from_utf8(plaintext)
-        .map_err(|_| "Invalid UTF-8 in decrypted data".to_string())
+    String::from_utf8(plaintext).map_err(|_| "Invalid UTF-8 in decrypted data".to_string())
 }
 
 #[cfg(test)]
 mod test_cipher {
     use super::*;
-    
+
     #[test]
     fn test_enc_dec() {
         let password = "abcd";
         let data = "With great power comes great responsibility.";
-        
+
         let enc = encrypt(password, data).expect("Encryption should succeed");
         println!("Encryption: {}", enc);
-        
+
         let dec = decrypt(password, &enc).expect("Decryption should succeed");
         println!("Decryption: {}", dec);
-        
+
         assert_eq!(data, dec);
     }
 
@@ -95,18 +98,21 @@ mod test_cipher {
         let password = "correct_password";
         let wrong_password = "wrong_password";
         let data = "Secret message";
-        
+
         let enc = encrypt(password, data).expect("Encryption should succeed");
         let result = decrypt(wrong_password, &enc);
-        
-        assert!(result.is_err(), "Decryption with wrong password should fail");
+
+        assert!(
+            result.is_err(),
+            "Decryption with wrong password should fail"
+        );
     }
 
     #[test]
     fn test_invalid_base64() {
         let password = "password";
         let invalid_data = "invalid_base64!";
-        
+
         let result = decrypt(password, invalid_data);
         assert!(result.is_err(), "Decryption of invalid base64 should fail");
     }
