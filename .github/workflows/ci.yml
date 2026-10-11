@@ -1,0 +1,65 @@
+# Format, lint and test the Rust crate on pull requests and on main
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs for the same branch or PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Pinned so new clippy lints in a stable release cannot turn CI red
+      # without a code change. Bump by hand and fix any new warnings.
+      RUST_VERSION: "1.97.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+          rustup default "$RUST_VERSION"
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Lint (host)
+        run: cargo clippy --all-targets -- -D warnings
+      # The deployed build targets wasm32, so check it compiles there too
+      - name: Lint (wasm32)
+        run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+      - name: Test
+        run: cargo test
+
+  # Runs the same build as the Pages deploy, so a PR that breaks it fails
+  # here instead of on main. Keep these steps in sync with static.yml.
+  # Uses the runner's default stable Rust, like the deploy.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
+      - name: Build WASM
+        run: wasm-pack build
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Build Frontend
+        working-directory: ./www
+        run: |
+          npm ci
+          npm run build
+      - name: Check build output
+        run: test -f www/dist/index.html && find www/dist -name '*.wasm' | grep -q .
