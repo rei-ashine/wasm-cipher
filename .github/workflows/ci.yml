@@ -17,6 +17,7 @@ concurrency:
 jobs:
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       # Pinned so new clippy lints in a stable release cannot turn CI red
       # without a code change. Bump by hand and fix any new warnings.
@@ -37,3 +38,28 @@ jobs:
         run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
       - name: Test
         run: cargo test
+
+  # Runs the same build as the Pages deploy, so a PR that breaks it fails
+  # here instead of on main. Keep these steps in sync with static.yml.
+  # Uses the runner's default stable Rust, like the deploy.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
+      - name: Build WASM
+        run: wasm-pack build
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Build Frontend
+        working-directory: ./www
+        run: |
+          npm ci
+          npm run build
+      - name: Check build output
+        run: test -f www/dist/index.html && find www/dist -name '*.wasm' | grep -q .
