@@ -51,6 +51,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      WASM_PACK_VERSION: "0.15.0"
     outputs:
       artifact: ${{ steps.artifact.outputs.name }}
     steps:
@@ -60,8 +62,19 @@ jobs:
         run: |
           rustup toolchain install "$RUST_VERSION" --profile minimal --target wasm32-unknown-unknown
           rustup default "$RUST_VERSION"
+      # wasm-pack is built from its crates.io source once per version and
+      # toolchain, then restored from the cache instead of rebuilt each run
+      - name: Cache wasm-pack
+        id: wasm-pack-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: wasm-pack-${{ env.WASM_PACK_VERSION }}-rust-${{ env.RUST_VERSION }}-${{ runner.os }}-${{ runner.arch }}
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.15.0 --locked
+        if: steps.wasm-pack-cache.outputs.cache-hit != 'true'
+        run: cargo install wasm-pack --version "$WASM_PACK_VERSION" --locked
+      - name: Check wasm-pack
+        run: wasm-pack --version
       - name: Build WASM
         run: wasm-pack build -- --locked
       - name: Setup Node
