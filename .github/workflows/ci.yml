@@ -1,27 +1,34 @@
-# Format, lint and test the Rust crate on pull requests and on main
+# Checks and builds every pull request and push to main, and deploys
+# main to GitHub Pages only after all checks pass
 name: CI
 
 on:
   pull_request:
   push:
     branches: ["main"]
+  # Allows a manual (re)deploy from the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Cancel superseded runs for the same branch or PR
+# On a PR, a new push cancels the previous run. On main every commit gets
+# its own run, so a later merge never cancels or replaces an earlier
+# commit's checks.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
+
+env:
+  # Pinned so a new stable release cannot fail CI or change the deployed
+  # build without a code change. Bump by hand and fix any new warnings.
+  # Dependency versions are pinned by Cargo.lock (--locked).
+  RUST_VERSION: "1.97.0"
 
 jobs:
   rust:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      # Pinned so new clippy lints in a stable release cannot turn CI red
-      # without a code change. Bump by hand and fix any new warnings.
-      RUST_VERSION: "1.97.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -32,26 +39,31 @@ jobs:
       - name: Check formatting
         run: cargo fmt --check
       - name: Lint (host)
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets -- -D warnings
       # The deployed build targets wasm32, so check it compiles there too
       - name: Lint (wasm32)
-        run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+        run: cargo clippy --locked --target wasm32-unknown-unknown --all-targets -- -D warnings
       - name: Test
-        run: cargo test
+        run: cargo test --locked
 
-  # Runs the same build as the Pages deploy, so a PR that breaks it fails
-  # here instead of on main. Keep these steps in sync with static.yml.
-  # Uses the runner's default stable Rust, like the deploy.
+  # Builds the site. The artifact uploaded here is exactly what the deploy
+  # job publishes, so PRs test the real deploy build.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      artifact: ${{ steps.artifact.outputs.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal --target wasm32-unknown-unknown
+          rustup default "$RUST_VERSION"
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.15.0 --locked
       - name: Build WASM
-        run: wasm-pack build
+        run: wasm-pack build -- --locked
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -63,3 +75,40 @@ jobs:
           npm run build
       - name: Check build output
         run: test -f www/dist/index.html && find www/dist -name '*.wasm' | grep -q .
+      # Unique per attempt so "Re-run all jobs" does not leave two artifacts
+      # with the same name, which deploy-pages rejects. The deploy job reads
+      # the name from this job's output, so re-running only the deploy job
+      # still finds it.
+      - name: Name artifact
+        id: artifact
+        run: echo "name=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          # Upload only the built frontend directory
+          path: './www/dist'
+          name: ${{ steps.artifact.outputs.name }}
+
+  deploy:
+    needs: [rust, build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    # Allow one concurrent deployment
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact }}
