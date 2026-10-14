@@ -47,7 +47,7 @@ npm init wasm-app
       - [`webpack`](https://www.npmjs.com/package/webpack)
       - [`webpack-cli`](https://www.npmjs.com/package/webpack-cli)
   - defines a `start` script to run `serve.js`
-- `serve.js`: development server that rebuilds on change (webpack watch mode) and serves `dist/` at http://127.0.0.1:8080/ (set `PORT` to change it)
+- `serve.js`: development server that rebuilds on change (webpack watch mode), serves `dist/` at http://127.0.0.1:8080/ (set `PORT` to change it) and reloads open pages after each build
 - `webpack.config.js`: configuration file for bundling your js with webpack
 
 ## License

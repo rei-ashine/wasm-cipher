@@ -1,5 +1,6 @@
-// Development server: rebuilds on change with webpack's watch mode and
-// serves dist/ on localhost. Uses only Node built-ins.
+// Development server: rebuilds on change with webpack's watch mode, serves
+// dist/ on localhost and reloads open pages after each build. Uses only
+// Node built-ins.
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -9,6 +10,14 @@ const config = require("./webpack.config.js");
 const HOST = "127.0.0.1";
 const PORT = parsePort(process.env.PORT, 8080);
 const ROOT = config.output.path;
+
+// Requests must name this machine, so a page on another site cannot reach
+// the server through DNS rebinding
+const ALLOWED_HOSTS = new Set(["localhost", "127.0.0.1"]);
+
+// Pages open this stream and reload when a build finishes
+const RELOAD_PATH = "/__livereload";
+const RELOAD_SCRIPT = `<script>new EventSource("${RELOAD_PATH}").onmessage = () => location.reload();</script>`;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -45,6 +54,7 @@ function parsePort(value, fallback) {
 let compiling = true;
 let buildError = null;
 let waiting = [];
+const reloadClients = new Set();
 
 const compiler = webpack(config);
 compiler.hooks.invalid.tap("serve", () => {
@@ -64,6 +74,7 @@ const watcher = compiler.watch({}, (err, stats) => {
   const pending = waiting;
   waiting = [];
   pending.forEach((handle) => handle());
+  reloadClients.forEach((client) => client.write("data: reload\n\n"));
 });
 
 function whenBuilt(handle) {
@@ -76,11 +87,42 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.end(body);
 }
 
+function isAllowedHost(host) {
+  if (!host) return false;
+  return ALLOWED_HOSTS.has(host.replace(/:\d+$/, "").toLowerCase());
+}
+
+function openReloadStream(req, res) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-store",
+    Connection: "keep-alive",
+  });
+  res.write(": connected\n\n");
+  reloadClients.add(res);
+  req.on("close", () => reloadClients.delete(res));
+}
+
+function injectReload(html) {
+  const end = html.lastIndexOf("</body>");
+  return end === -1
+    ? html + RELOAD_SCRIPT
+    : html.slice(0, end) + RELOAD_SCRIPT + html.slice(end);
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 // Maps a URL to a file inside ROOT, or returns null if it must be rejected.
 function resolveFile(url) {
+  // Read the target as a plain path: new URL() would take a leading "//"
+  // as a host name and drop the first path segment
+  const rawPath = url.split(/[?#]/, 1)[0];
+  if (!rawPath.startsWith("/")) return null;
   let pathname;
   try {
-    pathname = decodeURIComponent(new URL(url, "http://localhost").pathname);
+    pathname = decodeURIComponent(rawPath);
   } catch {
     return null;
   }
@@ -106,12 +148,21 @@ function serveFile(res, file) {
         return;
       }
       const ext = path.extname(target).toLowerCase();
-      send(res, 200, data, MIME_TYPES[ext] || "application/octet-stream");
+      const body = ext === ".html" ? injectReload(data.toString("utf8")) : data;
+      send(res, 200, body, MIME_TYPES[ext] || "application/octet-stream");
     });
   });
 }
 
 const server = http.createServer((req, res) => {
+  if (!isAllowedHost(req.headers.host)) {
+    send(res, 403, "Invalid Host header");
+    return;
+  }
+  if (req.url === RELOAD_PATH) {
+    openReloadStream(req, res);
+    return;
+  }
   const file = resolveFile(req.url);
   if (file === null) {
     send(res, 400, "Bad Request");
@@ -119,7 +170,10 @@ const server = http.createServer((req, res) => {
   }
   whenBuilt(() => {
     if (buildError) {
-      send(res, 500, `Build failed:\n\n${buildError}\n`);
+      // HTML with the reload script, so the page recovers once the build
+      // is fixed
+      const page = `<!doctype html><meta charset="utf-8"><title>Build failed</title><pre>Build failed:\n\n${escapeHtml(buildError)}</pre>${RELOAD_SCRIPT}`;
+      send(res, 500, page, MIME_TYPES[".html"]);
       return;
     }
     serveFile(res, file);
