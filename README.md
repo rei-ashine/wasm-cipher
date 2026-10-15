@@ -93,7 +93,7 @@ flowchart LR
 ├── .github
 │   ├── dependabot.yml
 │   └── workflows
-│       └── static.yml
+│       └── ci.yml
 ├── .gitignore
 ├── Cargo.lock
 ├── Cargo.toml
@@ -116,6 +116,7 @@ flowchart LR
     │   ├── css
     │   └── html
     ├── README.md
+    ├── serve.js
     └── webpack.config.js
 ```
 
