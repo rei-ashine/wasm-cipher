@@ -92,6 +92,8 @@ flowchart LR
 .
 ├── .github
 │   ├── dependabot.yml
+│   ├── scripts
+│   │   └── deploy-guard.sh
 │   └── workflows
 │       └── ci.yml
 ├── .gitignore
