@@ -109,22 +109,42 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Same permissions the previous static.yml deploy ran with
+    # The previous static.yml deploy's permissions, plus deployments: read
+    # for the guard below
     permissions:
       contents: read
+      deployments: read
       pages: write
       id-token: write
-    # Allow one concurrent deployment
+    # One deployment at a time. Queue rather than cancel: cancelling a
+    # running deploy because an older commit's run arrived later is how the
+    # site could roll back.
     concurrency:
       group: pages
-      cancel-in-progress: true
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # The guard fails open: if checkout or the guard itself fails, the
+      # deploy still runs, as it did before the guard existed
+      - name: Checkout
+        uses: actions/checkout@v7
+        continue-on-error: true
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Skip if a newer commit is already deployed
+        id: guard
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/deploy-guard.sh
       - name: Setup Pages
+        if: steps.guard.outputs.deploy != 'false'
         uses: actions/configure-pages@v6
       - name: Deploy to GitHub Pages
+        if: steps.guard.outputs.deploy != 'false'
         id: deployment
         uses: actions/deploy-pages@v5
         with:
