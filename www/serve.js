@@ -129,9 +129,14 @@ function resolveFile(url) {
   // fs throws synchronously on paths containing NUL
   if (pathname.includes("\0")) return null;
 
-  // Resolve inside ROOT only, so "../" cannot reach other files
-  const file = path.join(ROOT, path.normalize(pathname));
-  if (file !== ROOT && !file.startsWith(ROOT + path.sep)) return null;
+  // A path ending in "/" names a directory: serve its index.html. This also
+  // keeps the result below ROOT, never ROOT itself, for the check below.
+  const wanted = pathname.endsWith("/") ? pathname + "index.html" : pathname;
+
+  // Resolve to an absolute path and accept it only inside ROOT, so "../"
+  // cannot reach other files
+  const file = path.resolve(ROOT, "." + wanted);
+  if (!file.startsWith(ROOT + path.sep)) return null;
   return file;
 }
 
